@@ -1,12 +1,11 @@
---pre
---extra-index-url https://download.pytorch.org/whl/nightly/cu129
-
 fastapi==0.116.1
-uvicorn==0.35.0
+uvicorn[standard]==0.35.0   # includes click, httptools, etc.
 
-torch==2.9.0.dev20250803+cu129
-torchvision==0.24.0.dev20250804+cu129
-torchaudio==2.8.0.dev20250804+cu129
+# PyTorch CPU-only compatible versions (optional, uncomment if you need torch)
+# torch==2.8.0+cpu
+# torchvision==0.15.2+cpu
+# torchaudio==2.8.0+cpu
+# --index-url https://download.pytorch.org/whl/cpu
 
 pillow==11.3.0
 numpy==2.2.6
@@ -16,3 +15,4 @@ huggingface-hub==0.34.3
 requests==2.32.4
 python-dotenv==1.1.1
 python-multipart==0.0.20
+click  # explicitly added just in case

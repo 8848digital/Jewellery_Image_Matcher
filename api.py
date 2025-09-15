@@ -15,13 +15,17 @@ import os
 import tarfile
 import requests
 from pathlib import Path
+import argparse
+import torch.serialization
 from dotenv import load_dotenv
+torch.serialization.add_safe_globals([argparse.Namespace])
+
 
 # ================================
 # Load environment variables
 # ================================
 load_dotenv()
-
+MODEL_PATH = os.getenv("MODEL_PATH")
 MODEL_REPO_ID = os.getenv("MODEL_REPO_ID")
 MODEL_FILENAME = os.getenv("MODEL_FILENAME")
 CHROMADB_URL = os.getenv("CHROMADB_URL")
@@ -51,18 +55,18 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ================================
 def load_model():
     try:
-        model_path = hf_hub_download(
-            repo_id=MODEL_REPO_ID,
-            filename=MODEL_FILENAME
-        )
-        checkpoint = torch.load(model_path, map_location=DEVICE)
+        if not os.path.exists(MODEL_PATH):
+            raise FileNotFoundError(f"❌ Model file not found at {os.path.abspath(MODEL_PATH)}")
 
+        checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
         model_state_dict = checkpoint["model_state_dict"]
 
+        # Load DinoV2 backbone without pretrained weights
         model = torch.hub.load(
             "facebookresearch/dinov2", "dinov2_vitl14", pretrained=False
         )
 
+        # Adapt checkpoint keys for DinoV2
         dinov2_state_dict = {}
         for key, value in model_state_dict.items():
             if key.startswith("backbone."):
@@ -71,17 +75,15 @@ def load_model():
         model.load_state_dict(dinov2_state_dict, strict=False)
         model = model.to(DEVICE).eval()
 
-        logger.info("✅ Fine-tuned jewelry model loaded from Hugging Face!")
+        logger.info(f"✅ Fine-tuned jewelry model loaded from {MODEL_PATH}")
         return model
 
     except Exception as e:
-        logger.warning(f"Custom model load failed ({e}), using pretrained DinoV2...")
-        model = torch.hub.load(
-            "facebookresearch/dinov2", "dinov2_vitl14", pretrained=True
-        )
-        return model.to(DEVICE).eval()
+        logger.error(f"❌ Failed to load local model: {e}")
+        raise e
 
 MODEL = load_model()
+
 
 # ================================
 # Download & Extract ChromaDB

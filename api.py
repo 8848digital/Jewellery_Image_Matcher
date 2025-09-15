@@ -154,7 +154,8 @@ def extract_embedding(image_bytes):
 # Clean ID Helper
 # ================================
 def clean_id(full_id: str) -> str:
-    match = re.search(r"[A-Z]{2,}\d{3,}", full_id)
+    # Look for: 2+ uppercase letters + digits + optional letters/numbers/dash/decimal
+    match = re.search(r"[A-Z]{2,}\d+[A-Za-z0-9.-]*", full_id)
     return match.group(0) if match else full_id
 
 # ================================
